@@ -33,12 +33,22 @@ export interface LogEntry {
   details?: string;
 }
 
-export const LivePreviewScreen: React.FC = () => {
+export interface LivePreviewScreenProps {
+  initialProject?: Project;
+  initialProjectId?: string;
+}
+
+export const LivePreviewScreen: React.FC<LivePreviewScreenProps> = ({
+  initialProject,
+  initialProjectId,
+}) => {
   // ---------------------------------------------------------------------------
   // State: Projects
   // ---------------------------------------------------------------------------
   const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
-  const [selectedProject, setSelectedProject] = useState<Project>(INITIAL_PROJECTS[0]);
+  const [selectedProject, setSelectedProject] = useState<Project>(
+    initialProject || INITIAL_PROJECTS[0]
+  );
   const [showProjectPicker, setShowProjectPicker] = useState<boolean>(false);
 
   // ---------------------------------------------------------------------------
@@ -129,14 +139,25 @@ export const LivePreviewScreen: React.FC = () => {
         const storedProjects = await getProjects();
         if (storedProjects && storedProjects.length > 0) {
           setProjects(storedProjects);
-          setSelectedProject(storedProjects[0]);
+          if (initialProject) {
+            setSelectedProject(initialProject);
+          } else if (initialProjectId) {
+            const found = storedProjects.find((p) => p.id === initialProjectId);
+            if (found) {
+              setSelectedProject(found);
+            } else {
+              setSelectedProject(storedProjects[0]);
+            }
+          } else {
+            setSelectedProject(storedProjects[0]);
+          }
         }
       } catch {
         // Keep initial fallback projects
       }
     }
     loadProjects();
-  }, []);
+  }, [initialProject, initialProjectId]);
 
   // ---------------------------------------------------------------------------
   // Real Metro Connection Detector
@@ -799,6 +820,38 @@ export const LivePreviewScreen: React.FC = () => {
                         <Ionicons name="sync" size={16} color={colors.warning} />
                         <Text style={styles.pipelineStepText}>EAS iOS Dev Build in queue</Text>
                       </View>
+                    </View>
+                  </View>
+                )}
+
+                {!['proj-nexa-finance', 'proj-arena-browser', 'proj-botworks'].includes(selectedProject.id) && (
+                  <View style={styles.simAppContainer}>
+                    <View style={styles.simHeader}>
+                      <View>
+                        <Text style={styles.simGreeting}>{(selectedProject.category || 'PROJECT').toUpperCase()}</Text>
+                        <Text style={styles.simUserTitle}>{selectedProject.name}</Text>
+                      </View>
+                      <View style={[styles.simEyeButton, { backgroundColor: colors.accentPrimaryAlpha }]}>
+                        <Ionicons name="flash" size={16} color={colors.accentPrimary} />
+                      </View>
+                    </View>
+
+                    <View style={styles.simBalanceCard}>
+                      <Text style={styles.simBalanceLabel}>LIVE APPLICATION WORKSPACE</Text>
+                      <Text style={[styles.simBalanceAmount, { fontSize: fontSizes.lg }]}>
+                        {(selectedProject.framework || 'EXPO').toUpperCase()} • {selectedProject.gitBranch || 'main'}
+                      </Text>
+                      <View style={styles.simDeltaRow}>
+                        <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+                        <Text style={styles.simDeltaText}>{selectedProject.filesCount || 0} workspace files ready</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.simSuccessCard}>
+                      <Ionicons name="pulse" size={14} color={colors.accentCyan} />
+                      <Text style={[styles.simSuccessText, { color: colors.accentCyan }]}>
+                        Viewport rendered via React Native Web engine
+                      </Text>
                     </View>
                   </View>
                 )}

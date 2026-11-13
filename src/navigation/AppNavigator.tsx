@@ -694,7 +694,12 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
         return <ArenaWorkspaceScreen onBack={goBack} />;
 
       case 'preview':
-        return <LivePreviewScreen />;
+        return (
+          <LivePreviewScreen
+            initialProject={screenParams?.project}
+            initialProjectId={screenParams?.projectId || activeProjectId || undefined}
+          />
+        );
 
       case 'design':
         return <DesignStudioScreen />;
@@ -760,7 +765,10 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
                 showActions={false}
               />
               <View style={styles.modalContentArea}>
-                <LivePreviewScreen />
+                <LivePreviewScreen
+                  initialProject={modalParams?.project}
+                  initialProjectId={modalParams?.projectId || activeProjectId || undefined}
+                />
               </View>
             </View>
           </Modal>
