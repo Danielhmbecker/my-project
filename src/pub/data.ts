@@ -52,7 +52,7 @@ export const PRODUCTS: Product[] = [
   p('bells', "Bell's Original", 700, 2, 14, 'standard', '#6d3d14', '#8b4a14', '#a9262d', '#f4ead2', '#a9262d', "BELL'S"),
   p('grouse', 'Famous Grouse', 700, 2, 16, 'standard', '#5b2d0f', '#8f4a14', '#c4372c', '#f4ead2', '#c4372c', 'GROUSE'),
   p('baileys', 'Baileys Irish Cream', 700, 2, 18, 'round', '#3b2a1d', '#c8a98a', '#e6d9bf', '#4a2e1a', '#4a2e1a', 'BAILEYS'),
-  p('pimms', "Pimm's No.1 Cup", 750, 2, 17, 'standard', '#21140c', '#8a3a12', '#f3ecdd', '#a6232a', '#cfd5d8', "PIMM'S", '#c9ccce'),
+  p('pimms', 'Pimm’s No.1 Cup', 750, 2, 17, 'standard', '#21140c', '#7c280b', '#f2ebda', '#9c1c22', '#ede6d6', "PIMM'S", '#efe9da'),
   p('archers', 'Archers Peach Schnapps', 700, 2, 12, 'standard', '#dcebe8', '#e8c68a', '#e2a04b', '#4a2410', '#cf5a3b', 'ARCHERS'),
   p('disaronno', 'Disaronno Amaretto', 700, 2, 19, 'square', '#6b3a14', '#7d3a0f', '#cfa24a', '#2a1608', '#a8191e', 'DISARONNO'),
   // Shelf 3

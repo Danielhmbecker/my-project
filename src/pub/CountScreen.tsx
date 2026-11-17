@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -27,20 +27,18 @@ interface Props {
 
 export function CountScreen({ store, onWaste, onOverview }: Props) {
   const { state, setIndex, setLevel, lockIn } = store;
-  const { height: winH } = useWindowDimensions();
   const product = PRODUCTS[state.index];
   const saved = state.counts[product.id];
   const [level, setLocal] = useState(saved?.level ?? 10);
+  const [gaugeH, setGaugeH] = useState(340);
   const lastInt = useRef(Math.round(level));
 
-  // switching bottle loads its saved level
   useEffect(() => {
     const l = state.counts[product.id]?.level ?? 10;
     setLocal(l);
     lastInt.current = Math.round(l);
   }, [product.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const gaugeH = Math.max(240, Math.min(400, winH - 440));
   const whole = Math.round(level);
   const ml = Math.round((whole / 10) * product.sizeMl);
   const shelf = Math.ceil((state.index + 1) / PER_SHELF);
@@ -60,7 +58,7 @@ export function CountScreen({ store, onWaste, onOverview }: Props) {
 
   const thumbs = useRef<ScrollView>(null);
   useEffect(() => {
-    thumbs.current?.scrollTo({ x: Math.max(0, state.index * 74 - 140), animated: true });
+    thumbs.current?.scrollTo({ x: Math.max(0, state.index * 74 - 148), animated: false });
   }, [state.index]);
 
   const counted = Object.values(state.counts).filter((c) => c.lockedAt).length;
@@ -68,19 +66,37 @@ export function CountScreen({ store, onWaste, onOverview }: Props) {
 
   return (
     <View style={s.root}>
+      {/* Background gradient */}
+      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none" pointerEvents="none">
+        <Defs>
+          <LinearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={C.bgTop} />
+            <Stop offset="0.55" stopColor={C.bgMid} />
+            <Stop offset="1" stopColor={C.bgDeep} />
+          </LinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#bgGrad)" />
+      </Svg>
+
       <View style={s.header}>
         <View style={s.eyebrowRow}>
           <Text style={s.eyebrow}>
             {LOCATION} - SHELF {shelf} - {state.index + 1} OF {PRODUCTS.length}
           </Text>
           <Pressable onPress={onOverview} hitSlop={12} style={s.overviewBtn} accessibilityLabel="Open stock overview">
-            <Ionicons name="list" size={18} color={C.gold} />
+            <Ionicons name="list" size={16} color={C.eyebrow} />
             <Text style={s.overviewTxt}>{counted}/{PRODUCTS.length}</Text>
           </Pressable>
         </View>
-        <Text style={s.title} numberOfLines={1} adjustsFontSizeToFit>
+        <Text
+          style={[s.title, product.name.length > 18 && { fontSize: 21 }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.78}
+        >
           {product.name} - {product.sizeMl}ml
         </Text>
+        <View style={s.divider} />
       </View>
 
       <View style={s.pillRow}>
@@ -88,7 +104,13 @@ export function CountScreen({ store, onWaste, onOverview }: Props) {
         <Text style={s.pill}>OFFLINE - SYNCS LATER</Text>
       </View>
 
-      <View style={{ paddingHorizontal: 0, marginTop: 4 }}>
+      <View
+        style={s.gaugeWrap}
+        onLayout={(e) => {
+          const h = Math.floor(e.nativeEvent.layout.height);
+          if (h > 180) setGaugeH(h);
+        }}
+      >
         <LevelGauge product={product} level={level} height={gaugeH} onChange={onChange} onRelease={onRelease} />
       </View>
 
@@ -98,7 +120,9 @@ export function CountScreen({ store, onWaste, onOverview }: Props) {
           <Text style={s.slash}>/</Text>
           10
         </Text>
-        <Text style={s.approx}>approx {ml} ml remaining{isLocked ? '  ·  locked ✓' : ''}</Text>
+        <Text style={s.approx}>
+          approx {ml} ml remaining{isLocked ? ' · locked ✓' : ''}
+        </Text>
       </View>
 
       <View style={s.btnRow}>
@@ -110,10 +134,19 @@ export function CountScreen({ store, onWaste, onOverview }: Props) {
           }}
           accessibilityRole="button"
         >
+          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
+            <Defs>
+              <LinearGradient id="darkBtn" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor="#3a3f3c" />
+                <Stop offset="1" stopColor="#262a27" />
+              </LinearGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#darkBtn)" />
+          </Svg>
           <Text style={s.btnDarkTxt}>LOG WASTE</Text>
         </Pressable>
         <Pressable
-          style={({ pressed }) => [s.btn, pressed && s.pressed]}
+          style={({ pressed }) => [s.btn, s.btnGold, pressed && s.pressed]}
           onPress={() => {
             tap('medium');
             lockIn(product.id, whole);
@@ -122,19 +155,19 @@ export function CountScreen({ store, onWaste, onOverview }: Props) {
         >
           <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
             <Defs>
-              <LinearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0" stopColor="#e9cf93" />
-                <Stop offset="0.55" stopColor="#d6b46e" />
-                <Stop offset="1" stopColor="#b8924a" />
+              <LinearGradient id="goldBtn" x1="0" y1="0" x2="1" y2="0.4">
+                <Stop offset="0" stopColor="#e4c57e" />
+                <Stop offset="0.52" stopColor="#c59e53" />
+                <Stop offset="1" stopColor="#a37c36" />
               </LinearGradient>
             </Defs>
-            <Rect x="0" y="0" width="100%" height="100%" fill="url(#gold)" />
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#goldBtn)" />
           </Svg>
           <Text style={s.btnGoldTxt}>LOCK IN</Text>
         </Pressable>
       </View>
 
-      <ScrollView ref={thumbs} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.thumbs} style={{ flexGrow: 0 }}>
+      <ScrollView ref={thumbs} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.thumbs} style={s.thumbsBar}>
         {PRODUCTS.map((p, i) => {
           const c = state.counts[p.id];
           const active = i === state.index;
@@ -160,27 +193,49 @@ export function CountScreen({ store, onWaste, onOverview }: Props) {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
-  header: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
+  header: { paddingHorizontal: 18, paddingTop: 14 },
   eyebrowRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
-  eyebrow: { color: C.gold, fontSize: 12, letterSpacing: 1, fontWeight: '600' },
-  overviewBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  overviewTxt: { color: C.gold, fontSize: 12, fontWeight: '700' },
-  title: { color: C.text, fontSize: 26, fontWeight: '700' },
-  pillRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 12, paddingTop: 8, gap: 5 },
+  eyebrow: { color: C.eyebrow, fontSize: 11.5, letterSpacing: 0.8, fontWeight: '600' },
+  overviewBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, opacity: 0.85 },
+  overviewTxt: { color: C.eyebrow, fontSize: 11.5, fontWeight: '600' },
+  title: { color: C.text, fontSize: 25, fontWeight: '700', letterSpacing: -0.3 },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: C.border, marginTop: 12 },
+  pillRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 18, paddingTop: 8, gap: 6 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.green },
-  pill: { color: C.muted, fontSize: 10, letterSpacing: 0.6 },
-  readout: { backgroundColor: C.card, marginHorizontal: 12, marginTop: 10, borderRadius: R.md, paddingVertical: 12, alignItems: 'center' },
-  big: { color: C.text, fontSize: 52, fontWeight: '700', lineHeight: 58 },
-  slash: { color: C.muted, fontWeight: '300' },
-  approx: { color: C.muted, fontSize: 13, marginTop: 0 },
-  btnRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, marginTop: 14 },
-  btn: { flex: 1, height: 38, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  btnDark: { backgroundColor: C.btnDark, flex: 0.95 },
-  btnDarkTxt: { color: C.text, fontWeight: '700', fontSize: 14 },
-  btnGoldTxt: { color: '#1b1409', fontWeight: '800', fontSize: 14 },
-  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
-  thumbs: { paddingHorizontal: 0, paddingTop: 12, paddingBottom: 16, gap: 8 },
-  thumb: { width: 66, height: 52, borderRadius: 10, backgroundColor: C.thumb, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent' },
-  thumbActive: { borderColor: C.gold, backgroundColor: '#22382d' },
-  tick: { position: 'absolute', top: 4, right: 4, width: 7, height: 7, borderRadius: 4, backgroundColor: C.green },
+  pill: { color: 'rgba(245,244,239,0.48)', fontSize: 10.5, letterSpacing: 0.6, fontWeight: '500' },
+  gaugeWrap: { flex: 1, minHeight: 240, justifyContent: 'center' },
+  readout: {
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+    marginHorizontal: 16,
+    marginTop: 6,
+    borderRadius: R.lg,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  big: { color: '#ffffff', fontSize: 44, fontWeight: '700', lineHeight: 48, letterSpacing: -0.5 },
+  slash: { color: 'rgba(255,255,255,0.45)', fontWeight: '300' },
+  approx: { color: 'rgba(255,255,255,0.58)', fontSize: 13, marginTop: 2 },
+  btnRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: 12 },
+  btn: { flex: 1, height: 44, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  btnDark: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+  btnGold: { borderWidth: 1, borderColor: 'rgba(255,235,180,0.3)' },
+  btnDarkTxt: { color: C.text, fontWeight: '700', fontSize: 13.5, letterSpacing: 0.5 },
+  btnGoldTxt: { color: '#141008', fontWeight: '800', fontSize: 13.5, letterSpacing: 0.5 },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.985 }] },
+  thumbsBar: { flexGrow: 0, marginTop: 12, marginBottom: 8 },
+  thumbs: { paddingHorizontal: 14, gap: 9 },
+  thumb: {
+    width: 65,
+    height: 62,
+    borderRadius: 10,
+    backgroundColor: C.thumb,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  thumbActive: { borderWidth: 1.5, borderColor: C.gold, backgroundColor: C.thumbActiveBg },
+  tick: { position: 'absolute', top: 4, right: 4, width: 6, height: 6, borderRadius: 3, backgroundColor: C.green },
 });

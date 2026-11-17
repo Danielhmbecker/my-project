@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { PanResponder, View } from 'react-native';
-import Svg, { Circle, Defs, Line, LinearGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import { PanResponder, Platform, View } from 'react-native';
+import Svg, { Circle, Defs, Line, LinearGradient, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { BottleArt, BOX_H, levelToY } from './Bottle';
 import { Product } from './data';
 import { C } from './theme';
@@ -13,7 +13,8 @@ interface Props {
   onRelease: (level: number) => void; // snapped integer
 }
 
-const RULER_W = 44;
+const SPINE_X = 24;
+const RIGHT_PAD = 28;
 
 /** Bottle + 0–10 ruler + draggable brass level line, drawn in a single SVG. */
 export function LevelGauge({ product, level, height, onChange, onRelease }: Props) {
@@ -53,19 +54,45 @@ export function LevelGauge({ product, level, height, onChange, onRelease }: Prop
   );
 
   const lineY = levelToY(level) * scale;
+  const topY = levelToY(10) * scale;
+  const botY = levelToY(0) * scale;
   const cx = width / 2;
   const bottleW = 100 * scale;
-  const ticks = [] as React.ReactElement[];
-  for (let i = 0; i <= 20; i++) {
-    const v = i / 2;
+  const handleX = Math.max(SPINE_X + 60, width - RIGHT_PAD);
+  const bottleHalfW = 36 * scale;
+  const shadeH = Math.max(0, botY + 12 - lineY);
+
+  // 100 sub-ticks from 0 to 10 (every 0.1), ticks point right of the spine, numbers sit to the right
+  const ticks: React.ReactElement[] = [];
+  for (let i = 0; i <= 100; i++) {
+    const v = i / 10;
     const y = levelToY(v) * scale;
-    const major = i % 2 === 0;
+    const isMajor = i % 10 === 0;
+    const isHalf = i % 5 === 0 && !isMajor;
+    const len = isMajor ? 9 : isHalf ? 6 : 3.5;
     ticks.push(
-      <Line key={`t${i}`} x1={RULER_W - 14} x2={RULER_W - (major ? 6 : 10)} y1={y} y2={y} stroke={C.gold} strokeOpacity={major ? 0.75 : 0.4} strokeWidth={1} />,
+      <Line
+        key={`t${i}`}
+        x1={SPINE_X}
+        x2={SPINE_X + len}
+        y1={y}
+        y2={y}
+        stroke={C.gold}
+        strokeOpacity={isMajor ? 0.8 : isHalf ? 0.52 : 0.32}
+        strokeWidth={isMajor ? 1.1 : 0.8}
+      />,
     );
-    if (major) {
+    if (isMajor) {
       ticks.push(
-        <SvgText key={`n${i}`} x={RULER_W - 18} y={y + 4} fontSize={11} fill={C.muted} textAnchor="end">
+        <SvgText
+          key={`n${i}`}
+          x={SPINE_X + 14}
+          y={y + 4}
+          fontSize={11}
+          fontWeight="500"
+          fill="rgba(245,244,239,0.68)"
+          textAnchor="start"
+        >
           {String(v)}
         </SvgText>,
       );
@@ -74,28 +101,58 @@ export function LevelGauge({ product, level, height, onChange, onRelease }: Prop
 
   return (
     <View
-      style={{ height, width: '100%' }}
+      style={[
+        { height, width: '100%' },
+        Platform.OS === 'web' ? ({ userSelect: 'none', touchAction: 'none', cursor: 'ns-resize' } as object) : null,
+      ]}
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       {...pan.panHandlers}
     >
       {width > 0 ? (
         <Svg width={width} height={height} pointerEvents="none">
           <Defs>
-            <LinearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={C.gold} stopOpacity="0.34" />
-              <Stop offset="1" stopColor={C.gold} stopOpacity="0.02" />
+            <RadialGradient id="backAura" cx="50%" cy="48%" rx="42%" ry="46%">
+              <Stop offset="0" stopColor="#264234" stopOpacity="0.45" />
+              <Stop offset="1" stopColor="#14201b" stopOpacity="0" />
+            </RadialGradient>
+            <LinearGradient id="shadeV" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor="#c9a259" stopOpacity="0.30" />
+              <Stop offset="0.55" stopColor="#b08843" stopOpacity="0.14" />
+              <Stop offset="1" stopColor="#9c7536" stopOpacity="0" />
+            </LinearGradient>
+            <LinearGradient id="shadeFadeH" x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor="#0f1a15" stopOpacity="0.55" />
+              <Stop offset="0.14" stopColor="#0f1a15" stopOpacity="0" />
+              <Stop offset="0.88" stopColor="#0f1a15" stopOpacity="0" />
+              <Stop offset="1" stopColor="#0f1a15" stopOpacity="0.85" />
             </LinearGradient>
           </Defs>
-          {/* shaded stock below the line */}
-          <Rect x={0} y={lineY} width={width} height={Math.max(0, height - lineY)} fill="url(#shade)" />
+
+          {/* Soft back-bar radial spotlight behind the bottle */}
+          <Rect x={0} y={0} width={width} height={height} fill="url(#backAura)" />
+
+          {/* Shaded stock area below the level line */}
+          <Rect x={SPINE_X} y={lineY} width={Math.max(0, width - SPINE_X - 12)} height={shadeH} fill="url(#shadeV)" />
+          <Rect x={SPINE_X} y={lineY} width={Math.max(0, width - SPINE_X - 12)} height={shadeH} fill="url(#shadeFadeH)" />
+
+          {/* Left ruler spine + ticks */}
+          <Line x1={SPINE_X} x2={SPINE_X} y1={topY} y2={botY} stroke={C.gold} strokeOpacity={0.42} strokeWidth={1} />
           {ticks}
-          {/* spine */}
-          <Line x1={RULER_W - 6} x2={RULER_W - 6} y1={levelToY(10) * scale} y2={levelToY(0) * scale} stroke={C.gold} strokeOpacity={0.4} strokeWidth={1} />
-          {/* bottle */}
+
+          {/* Faint right guide track */}
+          <Line x1={handleX} x2={handleX} y1={topY} y2={botY} stroke={C.gold} strokeOpacity={0.2} strokeWidth={1} />
+
+          {/* Horizontal gold level line broken cleanly around the ruler digits and bottle */}
+          <Line x1={12} x2={SPINE_X + 2} y1={lineY} y2={lineY} stroke={C.goldBright} strokeWidth={1.4} strokeOpacity={0.92} />
+          <Line x1={SPINE_X + 34} x2={Math.max(SPINE_X + 34, cx - bottleHalfW)} y1={lineY} y2={lineY} stroke={C.goldBright} strokeWidth={1.4} strokeOpacity={0.92} />
+          <Line x1={Math.min(width - 12, cx + bottleHalfW)} x2={width - 12} y1={lineY} y2={lineY} stroke={C.goldBright} strokeWidth={1.4} strokeOpacity={0.92} />
+
+          {/* Bottle sits cleanly in front of the level line */}
           <BottleGroup product={product} level={level} cx={cx} scale={scale} bottleW={bottleW} />
-          {/* level line + handle */}
-          <Line x1={0} x2={width} y1={lineY} y2={lineY} stroke={C.gold} strokeWidth={1.6} strokeOpacity={0.95} />
-          <Circle cx={width - 18} cy={lineY} r={9} fill={C.goldLight} stroke={C.goldDeep} strokeWidth={2.5} />
+
+          {/* Drag handle on the right vertical track */}
+          <Circle cx={handleX} cy={lineY} r={11} fill="#000" opacity={0.28} />
+          <Circle cx={handleX} cy={lineY} r={8} fill="#2a2618" stroke={C.goldBright} strokeWidth={2} />
         </Svg>
       ) : null}
     </View>
@@ -103,7 +160,6 @@ export function LevelGauge({ product, level, height, onChange, onRelease }: Prop
 }
 
 function BottleGroup({ product, level, cx, scale, bottleW }: { product: Product; level: number; cx: number; scale: number; bottleW: number }) {
-  // translate/scale via a nested Svg so BottleArt can stay in its 100x300 box
   return (
     <Svg x={cx - bottleW / 2} y={0} width={bottleW} height={BOX_H * scale} viewBox={`0 0 100 ${BOX_H}`}>
       <BottleArt product={product} level={level} uid="main" />
