@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { PanResponder, Platform, View } from 'react-native';
+import { PanResponder, Platform, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { BottleArt, BOX_H, levelToY } from './Bottle';
 import { Product } from './data';
@@ -102,14 +102,14 @@ export function LevelGauge({ product, level, height, onChange, onRelease }: Prop
   return (
     <View
       style={[
-        { height, width: '100%' },
+        { height, width: '100%', overflow: 'hidden' },
         Platform.OS === 'web' ? ({ userSelect: 'none', touchAction: 'none', cursor: 'ns-resize' } as object) : null,
       ]}
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       {...pan.panHandlers}
     >
       {width > 0 ? (
-        <Svg width={width} height={height} pointerEvents="none">
+        <Svg style={StyleSheet.absoluteFill} width={width} height={height} pointerEvents="none">
           <Defs>
             <RadialGradient id="backAura" cx="50%" cy="48%" rx="42%" ry="46%">
               <Stop offset="0" stopColor="#264234" stopOpacity="0.45" />
@@ -132,8 +132,8 @@ export function LevelGauge({ product, level, height, onChange, onRelease }: Prop
           <Rect x={0} y={0} width={width} height={height} fill="url(#backAura)" />
 
           {/* Shaded stock area below the level line */}
-          <Rect x={SPINE_X} y={lineY} width={Math.max(0, width - SPINE_X - 12)} height={shadeH} fill="url(#shadeV)" />
-          <Rect x={SPINE_X} y={lineY} width={Math.max(0, width - SPINE_X - 12)} height={shadeH} fill="url(#shadeFadeH)" />
+          <Rect x={SPINE_X} y={lineY} width={Math.max(0, handleX - SPINE_X)} height={shadeH} fill="url(#shadeV)" />
+          <Rect x={SPINE_X} y={lineY} width={Math.max(0, handleX - SPINE_X)} height={shadeH} fill="url(#shadeFadeH)" />
 
           {/* Left ruler spine + ticks */}
           <Line x1={SPINE_X} x2={SPINE_X} y1={topY} y2={botY} stroke={C.gold} strokeOpacity={0.42} strokeWidth={1} />
@@ -145,7 +145,7 @@ export function LevelGauge({ product, level, height, onChange, onRelease }: Prop
           {/* Horizontal gold level line broken cleanly around the ruler digits and bottle */}
           <Line x1={12} x2={SPINE_X + 2} y1={lineY} y2={lineY} stroke={C.goldBright} strokeWidth={1.4} strokeOpacity={0.92} />
           <Line x1={SPINE_X + 34} x2={Math.max(SPINE_X + 34, cx - bottleHalfW)} y1={lineY} y2={lineY} stroke={C.goldBright} strokeWidth={1.4} strokeOpacity={0.92} />
-          <Line x1={Math.min(width - 12, cx + bottleHalfW)} x2={width - 12} y1={lineY} y2={lineY} stroke={C.goldBright} strokeWidth={1.4} strokeOpacity={0.92} />
+          <Line x1={Math.min(handleX - 8, cx + bottleHalfW)} x2={handleX - 8} y1={lineY} y2={lineY} stroke={C.goldBright} strokeWidth={1.4} strokeOpacity={0.92} />
 
           {/* Bottle sits cleanly in front of the level line */}
           <BottleGroup product={product} level={level} cx={cx} scale={scale} bottleW={bottleW} />

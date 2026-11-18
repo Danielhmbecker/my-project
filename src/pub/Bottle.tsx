@@ -250,14 +250,38 @@ function PimmsLabel({ detail }: { detail: boolean }) {
       {/* PIMM'S wordmark */}
       {detail ? (
         <>
-          <SvgText x={50} y={166} fontSize={14.8} fontWeight="bold" fill="#9c1c22" textAnchor="middle" letterSpacing={0.2}>
+          <SvgText
+            x={50}
+            y={166}
+            fontSize={13.2}
+            fontWeight="bold"
+            fontFamily="Georgia, 'Times New Roman', Times, serif"
+            fill="#9c1c22"
+            textAnchor="middle"
+            letterSpacing={0.2}
+          >
             PIMM'S
           </SvgText>
           <Line x1={29} y1={172} x2={71} y2={172} stroke="#b89146" strokeWidth={0.6} />
-          <SvgText x={50} y={193} fontSize={14} fontWeight="bold" fontStyle="italic" fill="#9e762c" textAnchor="middle">
+          <SvgText
+            x={50}
+            y={193}
+            fontSize={13.5}
+            fontWeight="bold"
+            fontStyle="italic"
+            fontFamily="Georgia, 'Times New Roman', Times, serif"
+            fill="#9e762c"
+            textAnchor="middle"
+          >
             No.1
           </SvgText>
-          <Path d="M33 191 Q50 186 67 190" fill="none" stroke="#302820" strokeWidth={0.7} />
+          <Path
+            d="M34 195 Q38 189 41 194 T48 191 T56 194 Q61 189 66 193"
+            fill="none"
+            stroke="#302820"
+            strokeOpacity={0.55}
+            strokeWidth={0.55}
+          />
           <SvgText x={50} y={209} fontSize={4.4} fontWeight="600" fill="#504538" textAnchor="middle" letterSpacing={0.4}>
             THE ORIGINAL
           </SvgText>

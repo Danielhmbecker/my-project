@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LOCATION, PER_SHELF, PRODUCTS } from './data';
 import { BottleThumb } from './Bottle';
@@ -57,11 +56,13 @@ export function CountScreen({ store, onWaste, onOverview }: Props) {
   };
 
   const thumbs = useRef<ScrollView>(null);
-  useEffect(() => {
+  const centerThumb = () => {
     thumbs.current?.scrollTo({ x: Math.max(0, state.index * 74 - 148), animated: false });
-  }, [state.index]);
+  };
+  useEffect(() => {
+    centerThumb();
+  }, [state.index]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const counted = Object.values(state.counts).filter((c) => c.lockedAt).length;
   const isLocked = !!saved?.lockedAt;
 
   return (
@@ -79,15 +80,11 @@ export function CountScreen({ store, onWaste, onOverview }: Props) {
       </Svg>
 
       <View style={s.header}>
-        <View style={s.eyebrowRow}>
+        <Pressable onPress={onOverview} hitSlop={10} style={s.eyebrowRow} accessibilityLabel="Open stock overview">
           <Text style={s.eyebrow}>
             {LOCATION} - SHELF {shelf} - {state.index + 1} OF {PRODUCTS.length}
           </Text>
-          <Pressable onPress={onOverview} hitSlop={12} style={s.overviewBtn} accessibilityLabel="Open stock overview">
-            <Ionicons name="list" size={16} color={C.eyebrow} />
-            <Text style={s.overviewTxt}>{counted}/{PRODUCTS.length}</Text>
-          </Pressable>
-        </View>
+        </Pressable>
         <Text
           style={[s.title, product.name.length > 18 && { fontSize: 21 }]}
           numberOfLines={1}
@@ -167,7 +164,14 @@ export function CountScreen({ store, onWaste, onOverview }: Props) {
         </Pressable>
       </View>
 
-      <ScrollView ref={thumbs} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.thumbs} style={s.thumbsBar}>
+      <ScrollView
+        ref={thumbs}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={s.thumbs}
+        style={s.thumbsBar}
+        onLayout={centerThumb}
+      >
         {PRODUCTS.map((p, i) => {
           const c = state.counts[p.id];
           const active = i === state.index;
@@ -192,18 +196,16 @@ export function CountScreen({ store, onWaste, onOverview }: Props) {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bg },
+  root: { flex: 1, width: '100%', overflow: 'hidden', backgroundColor: C.bg },
   header: { paddingHorizontal: 18, paddingTop: 14 },
   eyebrowRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   eyebrow: { color: C.eyebrow, fontSize: 11.5, letterSpacing: 0.8, fontWeight: '600' },
-  overviewBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, opacity: 0.85 },
-  overviewTxt: { color: C.eyebrow, fontSize: 11.5, fontWeight: '600' },
   title: { color: C.text, fontSize: 25, fontWeight: '700', letterSpacing: -0.3 },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: C.border, marginTop: 12 },
   pillRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 18, paddingTop: 8, gap: 6 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.green },
   pill: { color: 'rgba(245,244,239,0.48)', fontSize: 10.5, letterSpacing: 0.6, fontWeight: '500' },
-  gaugeWrap: { flex: 1, minHeight: 240, justifyContent: 'center' },
+  gaugeWrap: { flex: 1, width: '100%', minHeight: 240, justifyContent: 'center', overflow: 'hidden' },
   readout: {
     backgroundColor: C.card,
     borderWidth: 1,
